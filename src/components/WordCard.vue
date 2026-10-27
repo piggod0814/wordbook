@@ -4,7 +4,7 @@
     <div class="progress">
       <div class="progress-row">
         <span>第 <b>{{ index + 1 }}</b> / {{ words.length }} 个</span>
-        <span class="progress-count">{{ answeredCount }} 已答</span>
+        <span class="progress-count">{{ answeredCount }} 已答 · {{ masteredCount }} 已掌握</span>
       </div>
       <div class="bar">
         <div class="bar-fill" :style="{ width: progress + '%' }"></div>
@@ -64,6 +64,11 @@
         {{ current.expanded ? '收起讲解' : '扩展讲解' }}
       </van-button>
 
+      <van-button class="link-btn" size="small" @click="master">
+        <van-icon name="passed" />
+        已掌握
+      </van-button>
+
       <van-button class="link-btn link-btn--strong" size="small" @click="next">
         下一个
         <van-icon name="arrow" />
@@ -78,6 +83,7 @@
 </template>
 
 <script>
+import { showConfirmDialog } from 'vant'
 import { store, freshWords } from '../store.js'
 
 export default {
@@ -111,6 +117,10 @@ export default {
 
     answeredCount() {
       return this.words.filter((w) => w.result !== '').length
+    },
+
+    masteredCount() {
+      return store.mastered.length
     },
 
     cardState() {
@@ -198,9 +208,39 @@ export default {
       this.current.expanded = !this.current.expanded
     },
 
-    // 词表被筛空之后，用它回到最初的整份词库
+    // 「已掌握」= 把这条词从 words 搬到 mastered。
+    // 没有把词真正扔掉，它只是换了个抽屉待着，随时能搬回来
+    master() {
+      const current = this.current
+
+      showConfirmDialog({
+        title: '标记为已掌握',
+        message: `「${current.word}」会从背单词里移出，放进笔记本的「已掌握」`
+      })
+        .then(() => {
+          store.mastered.push({
+            word: current.word,
+            meaning: current.meaning,
+            example: current.example
+          })
+
+          store.words = store.words.filter((w) => w.word !== current.word)
+
+          // 搬走一条之后，当前下标可能指到数组外面去了，得重新夹一下
+          const last = Math.max(store.words.length - 1, 0)
+          store.index = Math.min(this.index, last)
+          this.syncMeaning()
+        })
+        .catch(() => {
+          // 点了取消，什么都不做
+        })
+    },
+
+    // 词表被筛空之后，用它回到词库 —— 但已掌握的就不再塞回来了
     restart() {
-      store.words = freshWords()
+      store.words = freshWords().filter(
+        (w) => !store.mastered.some((m) => m.word === w.word)
+      )
       store.index = 0
       this.showMeaning = false
     }

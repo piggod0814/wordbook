@@ -37,6 +37,10 @@ const initialIndex = Math.min(Math.max(savedIndex, 0), maxIndex)
 export const store = reactive({
   words: initialWords,
   notes: archive && archive.notes ? archive.notes : [],
+  // 新加的一栏：已掌握的单词。
+  // 老存档里没有 mastered 这个字段，读出来是 undefined，
+  // 用 || [] 兜一下就变成空数组了 —— 所以不用升 KEY，进度也不会丢
+  mastered: archive && archive.mastered ? archive.mastered : [],
   index: initialIndex
 })
 
