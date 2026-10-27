@@ -31,6 +31,10 @@ const defaultData = {
 
 const saved = localStorage.getItem(KEY)
 
+// 原始词表的备份：词被筛空之后，靠它「重新背一遍」。
+// 必须深拷贝一份，否则它和 store 里的词是同一批对象，会被 result 污染
+export const defaultWords = JSON.parse(JSON.stringify(defaultData.words))
+
 export const store = reactive(saved ? JSON.parse(saved) : defaultData)
 
 watch(store, () => {

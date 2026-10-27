@@ -3,8 +3,8 @@ import WordPage from '../views/WordPage.vue'
 import NotesPage from '../views/NotesPage.vue'
 
 const routes = [
-  { path: '/', component: WordPage },
-  { path: '/notes', component: NotesPage }
+  { path: '/', component: WordPage, meta: { title: '背单词' } },
+  { path: '/notes', component: NotesPage, meta: { title: '我的笔记' } }
 ]
 
 const router = createRouter({
