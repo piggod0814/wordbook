@@ -9,6 +9,7 @@
 
   <van-tabbar route :fixed="false" :border="false" active-color="#4f63ff" inactive-color="#8a90a2">
     <van-tabbar-item to="/" icon="edit">背单词</van-tabbar-item>
+    <van-tabbar-item to="/add" icon="plus">添加</van-tabbar-item>
     <van-tabbar-item to="/notes" icon="notes-o">笔记本</van-tabbar-item>
   </van-tabbar>
 </template>

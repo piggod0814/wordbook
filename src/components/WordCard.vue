@@ -184,8 +184,10 @@ export default {
         store.index++
         this.syncMeaning()
       } else {
-        // 一轮走完：只留下"不记得"的进第二轮
-        store.words = store.words.filter((w) => w.result === '不记得')
+        // 一轮走完：只留下"没记住"的进第二轮。
+        // 注意是「不等于 记得」而不是「等于 不记得」——
+        // 这样用「下一个」跳过去、压根没作答的词也会留下，不会被悄悄丢掉
+        store.words = store.words.filter((w) => w.result !== '记得')
         store.index = 0
         this.showMeaning = false
       }
