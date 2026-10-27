@@ -1,7 +1,7 @@
 # 背单词本 · 前端
 
 Vue 3 + Vite + Vant 4 的移动端背单词应用，数据来自 Spring Boot 后端。
-后端仓库：[wordbook-backend](../wordbook-backend)（填你自己的实际地址）。
+后端仓库：[piggod0814/wordbook-backend](https://github.com/piggod0814/wordbook-backend)
 
 ## 功能
 
