@@ -3,7 +3,7 @@
     <van-search
       v-model="keyword"
       placeholder="搜索单词或中文"
-      shape="round"
+      shape="square"
       background="transparent"
     />
 
@@ -12,7 +12,6 @@
 
       <van-button
         size="mini"
-        round
         :type="sortOrder === 'az' ? 'primary' : 'default'"
         :plain="sortOrder !== 'az'"
         @click="setSort('az')"
@@ -21,7 +20,6 @@
       </van-button>
       <van-button
         size="mini"
-        round
         :type="sortOrder === 'za' ? 'primary' : 'default'"
         :plain="sortOrder !== 'za'"
         @click="setSort('za')"
@@ -50,7 +48,6 @@
         <van-button
           class="note-toggle"
           size="mini"
-          round
           plain
           type="primary"
           @click="toggleExpand(note)"
@@ -153,7 +150,7 @@ export default {
 
 .note {
   background: #fff;
-  border-radius: 18px;
+  border-radius: var(--radius-card);
   box-shadow: var(--card-shadow);
   padding: 16px 16px 14px;
 }
@@ -192,7 +189,7 @@ export default {
   margin-top: 12px;
   padding: 11px 13px;
   background: var(--brand-soft);
-  border-radius: 12px;
+  border-radius: var(--radius-soft);
   font-size: 12.5px;
   line-height: 1.75;
   color: #445;

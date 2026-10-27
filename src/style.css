@@ -13,14 +13,23 @@
   /* 本项目自己的色板 */
   --ink: #1f2430;
   --ink-2: #8a90a2;
+  --ink-3: #b3b9c8;
   --line: #eef0f6;
+  --edge: #d9deec;          /* 描边按钮的边框 */
   --brand: #4f63ff;
   --brand-soft: #eef1ff;
-  --ok: #22c55e;
-  --ok-soft: #e9f9ef;
-  --warn: #f59e0b;
-  --warn-soft: #fff5e5;
   --card-shadow: 0 10px 30px rgba(31, 36, 48, 0.07);
+
+  /* 圆角：整套统一成「方正」风格 */
+  --radius-btn: 4px;
+  --radius-card: 12px;
+  --radius-soft: 6px;
+
+  /* 覆盖 Vant 的圆角变量，让组件库也跟着方正 */
+  --van-radius-sm: 4px;
+  --van-radius-md: 4px;
+  --van-radius-lg: 6px;
+  --van-radius-max: 8px;
 }
 
 * {
@@ -75,7 +84,12 @@ body {
 /* 白卡片 */
 .panel {
   background: #fff;
-  border-radius: 18px;
+  border-radius: var(--radius-card);
   box-shadow: var(--card-shadow);
   padding: 18px;
+}
+
+/* 所有 Vant 按钮默认方角（去掉组件上的 round 之后仍兜一层底） */
+.van-button {
+  border-radius: var(--radius-btn);
 }

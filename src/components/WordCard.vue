@@ -26,50 +26,44 @@
       </div>
     </div>
 
-    <!-- 主操作 -->
+    <!-- 主操作：实心 = 主，描边 = 次 -->
     <div class="actions">
-      <van-button round size="large" class="btn-no" @click="forget">
+      <van-button class="btn-no" size="large" @click="forget">
         <van-icon name="cross" />
         不记得
       </van-button>
-      <van-button round size="large" class="btn-ok" @click="remember">
+      <van-button class="btn-ok" size="large" @click="remember">
         <van-icon name="success" />
         记得
       </van-button>
     </div>
 
-    <!-- 次操作 -->
+    <!-- 次操作：纯文字按钮，不抢主操作的视觉 -->
     <div class="sub-actions">
-      <van-button
-        size="small"
-        round
-        plain
-        icon="plus"
-        :disabled="noted"
-        @click="addNote"
-      >
+      <van-button class="link-btn" size="small" :disabled="noted" @click="addNote">
+        <van-icon name="plus" />
         {{ noted ? '已在笔记' : '加入笔记' }}
       </van-button>
 
       <van-button
         v-if="current.result === '不记得'"
+        class="link-btn"
         size="small"
-        round
-        plain
         @click="toggleExample"
       >
         {{ current.expanded ? '收起讲解' : '扩展讲解' }}
       </van-button>
 
-      <van-button size="small" round plain type="primary" icon="arrow" icon-position="right" @click="next">
+      <van-button class="link-btn link-btn--strong" size="small" @click="next">
         下一个
+        <van-icon name="arrow" />
       </van-button>
     </div>
   </div>
 
   <!-- 一轮走完、全部记得 -->
   <van-empty v-else description="全部背完了 🎉">
-    <van-button round type="primary" size="small" @click="restart">重新背一遍</van-button>
+    <van-button type="primary" size="small" @click="restart">重新背一遍</van-button>
   </van-empty>
 </template>
 
@@ -218,13 +212,13 @@ export default {
 .bar {
   height: 6px;
   background: #e7eaf3;
-  border-radius: 99px;
+  border-radius: 2px;
   overflow: hidden;
 }
 .bar-fill {
   height: 100%;
-  border-radius: 99px;
-  background: linear-gradient(90deg, #7b8cff, #4f63ff);
+  border-radius: 2px;
+  background: var(--brand);
   transition: width 0.3s ease;
 }
 
@@ -234,7 +228,7 @@ export default {
   flex: 1;
   min-height: 270px;
   background: #fff;
-  border-radius: 24px;
+  border-radius: var(--radius-card);
   box-shadow: var(--card-shadow);
   padding: 30px 22px;
   display: flex;
@@ -245,28 +239,29 @@ export default {
   transition: box-shadow 0.25s ease, transform 0.25s ease;
 }
 .card--ok {
-  box-shadow: 0 0 0 2px #d6f5e0, var(--card-shadow);
+  box-shadow: 0 0 0 1.5px #dbe2ff, var(--card-shadow);
 }
 .card--no {
-  box-shadow: 0 0 0 2px #ffe3b3, var(--card-shadow);
+  box-shadow: 0 0 0 1.5px #e3e7f0, var(--card-shadow);
 }
 
 .tag {
   font-size: 11px;
   padding: 3px 10px;
-  border-radius: 99px;
+  border-radius: var(--radius-btn);
   background: #f1f3f9;
   color: var(--ink-2);
   font-weight: 600;
+  letter-spacing: 0.04em;
   margin-bottom: 18px;
 }
 .tag--ok {
-  background: var(--ok-soft);
-  color: #16a34a;
+  background: var(--brand-soft);
+  color: var(--brand);
 }
 .tag--no {
-  background: var(--warn-soft);
-  color: #d97706;
+  background: #f1f3f9;
+  color: #6b7285;
 }
 
 .word {
@@ -295,7 +290,7 @@ export default {
   margin-top: 18px;
   padding: 14px 16px;
   background: var(--brand-soft);
-  border-radius: 14px;
+  border-radius: var(--radius-soft);
   text-align: left;
   font-size: 13px;
   line-height: 1.7;
@@ -315,7 +310,7 @@ export default {
 /* ---- 按钮 ---- */
 .actions {
   display: flex;
-  gap: 12px;
+  gap: 10px;
 }
 .actions > * {
   flex: 1;
@@ -326,27 +321,54 @@ export default {
   height: 52px;
   font-size: 16px;
   font-weight: 700;
-  color: #fff;
-  border: none;
+  border-radius: var(--radius-btn);
 }
+
+/* 主操作：实心蓝 */
 .btn-ok {
-  background: var(--ok);
-  box-shadow: 0 8px 20px rgba(34, 197, 94, 0.28);
+  background: var(--brand);
+  color: #fff;
+  border: 1px solid var(--brand);
+  box-shadow: 0 6px 16px rgba(79, 99, 255, 0.2);
 }
+
+/* 次操作：白底描边，同尺寸但不抢眼 */
 .btn-no {
-  background: var(--warn);
-  box-shadow: 0 8px 20px rgba(245, 158, 11, 0.28);
+  background: #fff;
+  color: var(--ink);
+  border: 1px solid var(--edge);
 }
+
 .btn-ok:active,
 .btn-no:active {
   transform: translateY(1px);
 }
 
+/* 次要操作：纯文字按钮，没有边框和底色 */
 .sub-actions {
   display: flex;
-  gap: 8px;
+  gap: 2px;
   justify-content: center;
   flex-wrap: wrap;
   padding-top: 2px;
+}
+
+.link-btn {
+  height: auto;
+  padding: 7px 10px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-btn);
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.link-btn:active {
+  background: rgba(79, 99, 255, 0.06);
+}
+
+.link-btn--strong {
+  color: var(--brand);
+  font-weight: 600;
 }
 </style>
