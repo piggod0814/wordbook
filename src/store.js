@@ -24,9 +24,20 @@ export const freshWords = () => wordBank.map(toWord)
 const saved = localStorage.getItem(KEY)
 const archive = saved ? JSON.parse(saved) : null
 
+const initialWords = archive && archive.words ? archive.words : freshWords()
+
+// 存档里的 index 有两种可能出问题：
+//   1. 老存档里根本没有这个字段 → undefined
+//   2. 词表变短了，存的 index 比数组还大 → 越界
+// Math.max / Math.min 这么一夹，就把它按在 [0, words.length - 1] 里
+const savedIndex = archive && typeof archive.index === 'number' ? archive.index : 0
+const maxIndex = Math.max(initialWords.length - 1, 0)
+const initialIndex = Math.min(Math.max(savedIndex, 0), maxIndex)
+
 export const store = reactive({
-  words: archive ? archive.words : freshWords(),
-  notes: archive ? archive.notes : []
+  words: initialWords,
+  notes: archive && archive.notes ? archive.notes : [],
+  index: initialIndex
 })
 
 watch(store, () => {

@@ -40,6 +40,16 @@
 
     <!-- 次操作：纯文字按钮，不抢主操作的视觉 -->
     <div class="sub-actions">
+      <van-button
+        class="link-btn"
+        size="small"
+        :disabled="index === 0"
+        @click="prev"
+      >
+        <van-icon name="arrow-left" />
+        上一个
+      </van-button>
+
       <van-button class="link-btn" size="small" :disabled="noted" @click="addNote">
         <van-icon name="plus" />
         {{ noted ? '已在笔记' : '加入笔记' }}
@@ -75,7 +85,6 @@ export default {
 
   data() {
     return {
-      index: 0,
       showMeaning: false
     }
   },
@@ -83,6 +92,11 @@ export default {
   computed: {
     words() {
       return store.words
+    },
+
+    // 当前背到第几个 —— 存在 store 里，所以切页面、刷新都不会丢
+    index() {
+      return store.index
     },
 
     // 当前这张卡；没有卡时是 undefined
@@ -129,12 +143,15 @@ export default {
 
   created() {
     // 从本地存档恢复时，已经答过的词直接显示中文
-    if (this.current && this.current.result) {
-      this.showMeaning = true
-    }
+    this.syncMeaning()
   },
 
   methods: {
+    // 切到某个词时：答过就显示中文，没答过就先藏起来
+    syncMeaning() {
+      this.showMeaning = Boolean(this.current && this.current.result)
+    },
+
     remember() {
       this.showMeaning = true
       this.current.result = '记得'
@@ -145,14 +162,22 @@ export default {
       this.current.result = '不记得'
     },
 
+    prev() {
+      if (this.index > 0) {
+        store.index--
+        this.syncMeaning()
+      }
+    },
+
     next() {
-      this.showMeaning = false
       if (this.index < this.words.length - 1) {
-        this.index++
+        store.index++
+        this.syncMeaning()
       } else {
         // 一轮走完：只留下"不记得"的进第二轮
         store.words = store.words.filter((w) => w.result === '不记得')
-        this.index = 0
+        store.index = 0
+        this.showMeaning = false
       }
     },
 
@@ -176,7 +201,7 @@ export default {
     // 词表被筛空之后，用它回到最初的整份词库
     restart() {
       store.words = freshWords()
-      this.index = 0
+      store.index = 0
       this.showMeaning = false
     }
   }
