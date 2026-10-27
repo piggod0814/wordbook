@@ -74,7 +74,7 @@
 </template>
 
 <script>
-import { store, defaultWords } from '../store.js'
+import { store, freshWords } from '../store.js'
 
 export default {
   name: 'WordCard',
@@ -179,9 +179,9 @@ export default {
       this.current.expanded = !this.current.expanded
     },
 
-    // 词表被筛空之后，用它回到最初那份词
+    // 词表被筛空之后，用它回到最初的整份词库
     restart() {
-      store.words = JSON.parse(JSON.stringify(defaultWords))
+      store.words = freshWords()
       this.index = 0
       this.showMeaning = false
     }
