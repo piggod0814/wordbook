@@ -84,7 +84,7 @@
 
 <script>
 import { showConfirmDialog, showToast } from 'vant'
-import { store, loadWords } from '../store.js'
+import { store, loadWords, saveResult, resetResults } from '../store.js'
 
 export default {
   name: 'WordCard',
@@ -164,12 +164,35 @@ export default {
 
     remember() {
       this.showMeaning = true
-      this.current.result = '记得'
+      this.setResult('记得')
     },
 
     forget() {
       this.showMeaning = true
-      this.current.result = '不记得'
+      this.setResult('不记得')
+    },
+
+    /**
+     * 作答 + 存库。
+     *
+     * 这里故意和「添加单词」反过来：先改界面，再去发请求。
+     *   - 添加单词：失败了要回滚，用户还得重填一遍，所以只能等后端确认再动界面
+     *   - 点「记得」：这是高频操作，等一次网络往返会有明显卡顿感；
+     *     而且失败代价极小 —— 再点一下就行，所以先改界面（乐观更新），
+     *     失败了再弹个提示
+     *
+     * 同一个项目里两种相反的顺序并不矛盾，判断标准是「失败要付多大代价」。
+     */
+    async setResult(value) {
+      const word = this.current.word
+      this.current.result = value
+
+      try {
+        await saveResult(word, value)
+      } catch (e) {
+        console.error('[result] 保存失败：', e)
+        showToast('进度没存上，检查后端')
+      }
     },
 
     prev() {
@@ -287,12 +310,19 @@ export default {
     // 注意这里不能再用本地的 freshWords() —— 词库已经在数据库里了，
     // 那样做等于把 words.js 里那 60 个写死的旧词重新塞回来，把库里真实的数据盖掉
     async restart() {
+      try {
+        // 先把数据库里每张卡的 result 清空。不清的话，重新拉回来还是
+        // 一堆「记得」，而 next() 会跳过所有「记得」的词，等于刚重置就又空表
+        await resetResults()
+      } catch (e) {
+        console.error('[restart] 清空失败：', e)
+        showToast('重置失败：' + e.message)
+        return
+      }
+
+      // loadWords 内部已经按 status 把 mastered 的排除了，这里不用再筛一遍
       await loadWords()
 
-      // 已掌握的还是别塞回来
-      store.words = store.words.filter(
-        (w) => !store.mastered.some((m) => m.word === w.word)
-      )
       store.index = 0
       this.showMeaning = false
     }

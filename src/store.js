@@ -66,13 +66,16 @@ export async function loadWords() {
 
   const list = await res.json()
 
-  // 后端每条词也带 result / expanded，但这里统一重置成初始值，
-  // 免得哪天数据库里存了脏状态，一进页面就是「已作答」
+  // result 从数据库读回来，不再强制清空 —— 这才是「接着背」的意思：
+  // 上次答过「记得」的词，这次进来卡片上还标着「记得」
+  //
+  // 唯一无条件重置的是 expanded：它只表示「例句展开没展开」，是纯粹的界面状态，
+  // 数据库里没存，每次进页面一律收起
   const toCard = (w) => ({
     word: w.word,
     meaning: w.meaning,
     example: w.example,
-    result: '',
+    result: w.result || '',
     expanded: false
   })
 
@@ -111,4 +114,36 @@ export async function loadNotes() {
     example: n.example,
     expanded: false
   }))
+}
+
+/**
+ * 存一次作答结果（'记得' / '不记得'）。
+ *
+ * 注意 body 里只放一个 result 字段。后端那边用 Map 接，不是整个 Word ——
+ * 改一个字段不需要把单词、释义、例句再传一遍，那些东西数据库里本来就有。
+ */
+export async function saveResult(word, result) {
+  const res = await fetch(`/api/words/${encodeURIComponent(word)}/result`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ result })
+  })
+
+  if (!res.ok) {
+    throw new Error('后端返回了 ' + res.status)
+  }
+}
+
+/**
+ * 清空所有作答结果，对应「重新背一遍」。
+ *
+ * 注意 URL 是 /api/words/results（复数），作用对象是「所有结果」，
+ * 不是某一个词。别和 /api/words/{word}/result 搞混。
+ */
+export async function resetResults() {
+  const res = await fetch('/api/words/results', { method: 'DELETE' })
+
+  if (!res.ok) {
+    throw new Error('后端返回了 ' + res.status)
+  }
 }
