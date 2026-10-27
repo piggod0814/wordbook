@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# 隧道地址记录（含公网链接，不进公开仓库）
+TUNNEL.md
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

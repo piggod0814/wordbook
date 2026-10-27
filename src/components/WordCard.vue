@@ -83,8 +83,8 @@
 </template>
 
 <script>
-import { showConfirmDialog } from 'vant'
-import { store, freshWords } from '../store.js'
+import { showConfirmDialog, showToast } from 'vant'
+import { store, loadWords } from '../store.js'
 
 export default {
   name: 'WordCard',
@@ -193,16 +193,39 @@ export default {
       }
     },
 
-    addNote() {
+    async addNote() {
       const current = this.current
-      const exists = store.notes.some((n) => n.word === current.word)
-      if (!exists) {
+      if (store.notes.some((n) => n.word === current.word)) return
+
+      try {
+        const res = await fetch('/api/notes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            word: current.word,
+            meaning: current.meaning,
+            example: current.example
+          })
+        })
+
+        // 409 = 数据库里已经有了。这种情况不算失败：
+        // 比如换了浏览器，本地笔记是空的，但库里早有这一条。
+        // 那就当作「加成功了」，本地补上即可，别弹一个吓人的错误
+        if (!res.ok && res.status !== 409) {
+          showToast('加笔记失败：' + res.status)
+          return
+        }
+
         store.notes.push({
           word: current.word,
           meaning: current.meaning,
           example: current.example,
           expanded: false
         })
+        showToast('已加入笔记')
+      } catch (e) {
+        console.error('[note] 请求失败：', e)
+        showToast('加笔记失败：' + e.message)
       }
     },
 
@@ -210,8 +233,8 @@ export default {
       this.current.expanded = !this.current.expanded
     },
 
-    // 「已掌握」= 把这条词从 words 搬到 mastered。
-    // 没有把词真正扔掉，它只是换了个抽屉待着，随时能搬回来
+    // 「已掌握」现在不在本地搬家了，而是把数据库里这条词的 status 改成 mastered。
+    // 页面上的「移出 words、加进 mastered」只是本地同步一下显示，真实数据在库里
     master() {
       const current = this.current
 
@@ -220,27 +243,54 @@ export default {
         message: `「${current.word}」会从背单词里移出，放进笔记本的「已掌握」`
       })
         .then(() => {
-          store.mastered.push({
-            word: current.word,
-            meaning: current.meaning,
-            example: current.example
-          })
-
-          store.words = store.words.filter((w) => w.word !== current.word)
-
-          // 搬走一条之后，当前下标可能指到数组外面去了，得重新夹一下
-          const last = Math.max(store.words.length - 1, 0)
-          store.index = Math.min(this.index, last)
-          this.syncMeaning()
+          // 不 return、也不 await：让失败在 markMastered 内部自己处理，
+          // 否则会被下面的 .catch 当成「用户点了取消」吞掉
+          this.markMastered(current)
         })
         .catch(() => {
           // 点了取消，什么都不做
         })
     },
 
-    // 词表被筛空之后，用它回到词库 —— 但已掌握的就不再塞回来了
-    restart() {
-      store.words = freshWords().filter(
+    async markMastered(current) {
+      try {
+        const res = await fetch(
+          `/api/words/${encodeURIComponent(current.word)}/mastered`,
+          { method: 'PUT' }
+        )
+
+        if (!res.ok) {
+          showToast('标记失败：' + res.status)
+          return
+        }
+
+        // 后端改成功了，再动界面
+        store.mastered.push({
+          word: current.word,
+          meaning: current.meaning,
+          example: current.example
+        })
+
+        store.words = store.words.filter((w) => w.word !== current.word)
+
+        // 搬走一条之后，当前下标可能指到数组外面去了，得重新夹一下
+        const last = Math.max(store.words.length - 1, 0)
+        store.index = Math.min(this.index, last)
+        this.syncMeaning()
+      } catch (e) {
+        console.error('[master] 请求失败：', e)
+        showToast('标记失败：' + e.message)
+      }
+    },
+
+    // 词表被筛空之后，用它回到词库。
+    // 注意这里不能再用本地的 freshWords() —— 词库已经在数据库里了，
+    // 那样做等于把 words.js 里那 60 个写死的旧词重新塞回来，把库里真实的数据盖掉
+    async restart() {
+      await loadWords()
+
+      // 已掌握的还是别塞回来
+      store.words = store.words.filter(
         (w) => !store.mastered.some((m) => m.word === w.word)
       )
       store.index = 0

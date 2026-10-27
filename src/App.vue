@@ -15,8 +15,22 @@
 </template>
 
 <script>
+import { loadWords, loadNotes } from './store'
+
 export default {
   name: 'App',
+  // mounted = 组件挂到页面上之后执行一次。放这里是因为它是全应用最外层的组件，
+  // 进来就跑一次，不管用户先打开哪个页签，数据都已经在了
+  async mounted() {
+    try {
+      // 两个请求互不依赖（笔记不靠单词算出来，反之亦然），
+      // 所以用 Promise.all 一起发出去、一起等，而不是 await 一个再 await 一个。
+      // 串行的话总耗时是两段时间相加，并行只等于较慢的那一个。
+      await Promise.all([loadWords(), loadNotes()])
+    } catch (e) {
+      console.error('从后端加载数据失败：', e)
+    }
+  },
   computed: {
     // 标题跟着路由表里的 meta.title 走
     title() {

@@ -47,3 +47,68 @@ export const store = reactive({
 watch(store, () => {
   localStorage.setItem(KEY, JSON.stringify(store))
 }, { deep: true })
+
+/**
+ * 从后端拿词。
+ *
+ * 地址写 /api/words 而不是 http://127.0.0.1:8080/api/words ——
+ * 因为请求要「先经过」Vite 的代理，再由代理转给 Spring。
+ * 写成完整地址就绕过了代理，浏览器会直接向 8080 发请求，那就变成跨域了。
+ */
+export async function loadWords() {
+  const res = await fetch('/api/words')
+
+  // fetch 只有「网络不通」才算失败；4xx / 5xx 它照样 resolve。
+  // 所以必须自己看一眼 ok，不然接口挂了你会拿到一个 null 还以为是空表
+  if (!res.ok) {
+    throw new Error('后端返回了 ' + res.status)
+  }
+
+  const list = await res.json()
+
+  // 后端每条词也带 result / expanded，但这里统一重置成初始值，
+  // 免得哪天数据库里存了脏状态，一进页面就是「已作答」
+  const toCard = (w) => ({
+    word: w.word,
+    meaning: w.meaning,
+    example: w.example,
+    result: '',
+    expanded: false
+  })
+
+  // 一个接口拿回全部词，再按 status 分成两拨。
+  // 已掌握不再单独建表、也不用再发第二个请求 —— 它就是同一批数据里的另一种状态
+  store.words = list.filter((w) => w.status !== 'mastered').map(toCard)
+  store.mastered = list
+    .filter((w) => w.status === 'mastered')
+    .map((w) => ({ word: w.word, meaning: w.meaning, example: w.example }))
+
+  store.index = 0
+}
+
+/**
+ * 从后端拿笔记。
+ *
+ * 和 loadWords 几乎一样，只有一个区别：笔记没有 result 字段（笔记不参与答题），
+ * 但多补一个 expanded —— 那是「扩展讲解收没收起」的界面状态，数据库里没存，
+ * 每次进来一律收起。
+ *
+ * 数据库返回的 Note 带 id，前端用不上，这里有意不往 store 里塞：
+ * 界面靠 word 认人，多一个 id 只会让两份数据长得不一样。
+ */
+export async function loadNotes() {
+  const res = await fetch('/api/notes')
+
+  if (!res.ok) {
+    throw new Error('后端返回了 ' + res.status)
+  }
+
+  const list = await res.json()
+
+  store.notes = list.map((n) => ({
+    word: n.word,
+    meaning: n.meaning,
+    example: n.example,
+    expanded: false
+  }))
+}

@@ -95,7 +95,7 @@
 </template>
 
 <script>
-import { showConfirmDialog } from 'vant'
+import { showConfirmDialog, showToast } from 'vant'
 import { store } from '../store.js'
 
 export default {
@@ -150,28 +150,71 @@ export default {
         message: `确定要删除「${note.word}」吗？`
       })
         .then(() => {
-          store.notes = store.notes.filter((n) => n.word !== note.word)
+          // 这里故意不写 return，也别写成 async 再 await ——
+          // 因为下面的 .catch 是给「用户点取消」准备的；
+          // 一旦把删除的 promise 串进来，删除失败也会掉进这个 catch，
+          // 被当成「用户取消了」静默吞掉，你永远不知道删失败了
+          this.removeNote(note)
         })
         .catch(() => {
           // 用户点了取消，什么都不做
         })
     },
 
+    async removeNote(note) {
+      try {
+        // 路径里带变量必须 encodeURIComponent：万一单词里有空格、斜杠、# 号，
+        // 直接拼进 URL 会把路径拆断，后端收到的就变成另一条路径了
+        const res = await fetch(`/api/notes/${encodeURIComponent(note.word)}`, {
+          method: 'DELETE'
+        })
+
+        if (!res.ok) {
+          showToast('删除失败：' + res.status)
+          return
+        }
+
+        store.notes = store.notes.filter((n) => n.word !== note.word)
+        showToast('已删除')
+      } catch (e) {
+        console.error('[note] 删除失败：', e)
+        showToast('删除失败：' + e.message)
+      }
+    },
+
     toggleExpand(note) {
       note.expanded = !note.expanded
     },
 
-    // 反向搬家：mastered → words。补上 result / expanded 两个字段，
-    // 让它跟新造出来的词长得一模一样，背单词页才不会读到 undefined
-    restore(item) {
-      store.words.push({
-        word: item.word,
-        meaning: item.meaning,
-        example: item.example,
-        result: '',
-        expanded: false
-      })
-      store.mastered = store.mastered.filter((m) => m.word !== item.word)
+    // 反向搬家：mastered → words。
+    // 同样先改数据库（DELETE 掉「已掌握」这个标记），成功了再动界面
+    async restore(item) {
+      try {
+        const res = await fetch(
+          `/api/words/${encodeURIComponent(item.word)}/mastered`,
+          { method: 'DELETE' }
+        )
+
+        if (!res.ok) {
+          showToast('移回失败：' + res.status)
+          return
+        }
+
+        // 补上 result / expanded 两个字段，让它跟新造出来的词长得一模一样，
+        // 背单词页才不会读到 undefined
+        store.words.push({
+          word: item.word,
+          meaning: item.meaning,
+          example: item.example,
+          result: '',
+          expanded: false
+        })
+        store.mastered = store.mastered.filter((m) => m.word !== item.word)
+        showToast('已移回背单词')
+      } catch (e) {
+        console.error('[restore] 请求失败：', e)
+        showToast('移回失败：' + e.message)
+      }
     }
   }
 }
